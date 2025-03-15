@@ -8,8 +8,18 @@ import (
 	"unicode/utf16"
 )
 
-type FlatData struct {
+type FlatData interface {
+	InitKey(key []byte)
+	Marshal() ([]byte, error)
+	Unmarshal(data []byte) error
+}
+
+type FlatBuffer struct {
 	TableKey []byte
+}
+
+func (f *FlatBuffer) InitKey(key []byte) {
+	f.TableKey = key
 }
 
 func Convert[T any](value T, tableKey []byte) T {
