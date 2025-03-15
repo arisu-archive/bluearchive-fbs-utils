@@ -1,0 +1,11 @@
+{
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": [
+    "--fast",
+    "--fix",
+  ],
+  "gopls": {
+    "formatting.local": "github.com/arisu-archive/bluearchive-fbs-utils",
+    "formatting.gofumpt": true
+  }
+}
