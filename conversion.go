@@ -16,7 +16,7 @@ type FlatData interface {
 }
 
 type FlatBuffer struct {
-	TableKey []byte
+	TableKey []byte `json:"-"`
 }
 
 func (f *FlatBuffer) InitKey(key []byte) {
