@@ -12,6 +12,7 @@ type FlatData interface {
 	InitKey(key []byte)
 	Marshal() ([]byte, error)
 	Unmarshal(data []byte) error
+	FlatDataName() string
 }
 
 type FlatBuffer struct {
