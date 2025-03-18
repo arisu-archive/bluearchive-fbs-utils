@@ -56,15 +56,15 @@ func (rnd *MT19937) Int31() int32 {
 	return int32(rnd.UInt32() >> 1) //nolint:gosec // The shift is taking care of the sign bit
 }
 
-func (rnd *MT19937) Bytes(length int) []byte {
+func (rnd *MT19937) Bytes(length uint64) []byte {
 	if length <= 0 {
 		panic(ErrInvalidBytesLength)
 	}
 
 	buf := make([]byte, length)
-	for i := 0; i < length; i += 4 {
+	for i := uint64(0); i < length; i += 4 {
 		val := rnd.Int31()
-		for j := 0; j < 4 && i+j < length; j++ {
+		for j := uint64(0); j < 4 && i+j < length; j++ {
 			// SHOULD BE LITTLE ENDIAN
 			buf[i+j] = byte(val & 0xff)
 			val >>= 8

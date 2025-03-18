@@ -7,7 +7,7 @@ import (
 	"github.com/arisu-archive/bluearchive-fbs-utils/pkg/xxhash32"
 )
 
-func CreateKey(name string, size int) []byte {
+func CreateKey(name string, size uint64) []byte {
 	// Apply xxhash32 to the name
 	hashValue := xxhash32.Checksum([]byte(name))
 
