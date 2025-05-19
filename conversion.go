@@ -139,20 +139,37 @@ func ConvertUbyte(value uint8, key []byte) uint8 {
 	return value ^ key[0]
 }
 
+func calculateModulus(key []byte) int {
+	if len(key) == 0 {
+		return 1
+	}
+	modulus := int(key[0] % 10)
+	if modulus <= 1 {
+		modulus = 7
+	}
+	if key[0]&1 == 1 {
+		modulus = -modulus
+	}
+
+	return modulus
+}
+
 // ConvertFloat32 converts a float32 value using XOR.
 func ConvertFloat32(value float32, key []byte) float32 {
-	if value == 0 {
-		return 0
+	modulus := calculateModulus(key)
+	if value > 0 && modulus != 1 {
+		return float32(value) / float32(modulus) / 10000
 	}
-	return float32(ConvertInt32(int32(value), key)) * 0.00001
+	return value
 }
 
 // ConvertFloat64 converts a float64 value using XOR.
 func ConvertFloat64(value float64, key []byte) float64 {
-	if value == 0 {
-		return 0
+	modulus := calculateModulus(key)
+	if value > 0 && modulus != 1 {
+		return float64(value) / float64(modulus) / 10000
 	}
-	return float64(ConvertInt64(int64(value), key)) * 0.00001
+	return value
 }
 
 // ConvertString converts a base64 encoded string.
