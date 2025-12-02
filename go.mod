@@ -2,7 +2,7 @@ module github.com/arisu-archive/bluearchive-fbs-utils
 
 go 1.23.0
 
-toolchain go1.25.4
+toolchain go1.25.5
 
 require (
 	github.com/onsi/ginkgo/v2 v2.27.2
