@@ -11,20 +11,18 @@ go get github.com/arisu-archive/bluearchive-fbs-utils
 ## Usage
 
 ```go
-package main
+tableKey := []byte{1, 2}
 
-import (
-	"fmt"
+decoded := fbsutils.Decode("QAI=", tableKey)
+encoded := fbsutils.Encode(decoded, tableKey)
 
-	fbsutils "github.com/arisu-archive/bluearchive-fbs-utils"
-)
-
-func main() {
-	tableKey := []byte{0xDE, 0xAD, 0xBE, 0xEF}
-	converted := fbsutils.Convert(1, tableKey)
-	fmt.Println(converted)
-}
+fmt.Println(decoded, encoded) // A QAI=
 ```
+
+`Convert` remains available for backward compatibility and behaves like
+`Decode`. New code should use the directional `Decode` and `Encode` functions.
+For floats, `Encode` reverses values decoded from the protocol's positive wire
+domain; legacy decoding leaves non-positive wire values unchanged.
 
 ## License
 
