@@ -23,7 +23,10 @@ func (f *FlatBuffer) InitKey(key []byte) {
 	f.TableKey = key
 }
 
-func Convert[T any](value T, tableKey []byte) T {
+// Decode converts a wire value into its decoded representation.
+// Float decoding preserves the legacy behavior of transforming only positive
+// wire values.
+func Decode[T any](value T, tableKey []byte) T {
 	switch v := any(value).(type) {
 	case int32:
 		return any(ConvertInt32(v, tableKey)).(T)
@@ -35,6 +38,8 @@ func Convert[T any](value T, tableKey []byte) T {
 		return any(ConvertUInt64(v, tableKey)).(T)
 	case uint8:
 		return any(ConvertUbyte(v, tableKey)).(T)
+	case bool:
+		return value
 	case float32:
 		return any(ConvertFloat32(v, tableKey)).(T)
 	case float64:
@@ -45,9 +50,42 @@ func Convert[T any](value T, tableKey []byte) T {
 		}
 		return any(ConvertString(v, tableKey)).(T)
 	default:
-		// If type not supported, return the original value
 		panic("type not supported:" + reflect.TypeOf(value).String())
 	}
+}
+
+// Encode converts a decoded value into its wire representation. For floats,
+// it reverses values decoded from the protocol's positive wire domain.
+func Encode[T any](value T, tableKey []byte) T {
+	switch v := any(value).(type) {
+	case int32:
+		return any(ConvertInt32(v, tableKey)).(T)
+	case int64:
+		return any(ConvertInt64(v, tableKey)).(T)
+	case uint32:
+		return any(ConvertUInt32(v, tableKey)).(T)
+	case uint64:
+		return any(ConvertUInt64(v, tableKey)).(T)
+	case uint8:
+		return any(ConvertUbyte(v, tableKey)).(T)
+	case bool:
+		return value
+	case float32:
+		return any(encodeFloat32(v, tableKey)).(T)
+	case float64:
+		return any(encodeFloat64(v, tableKey)).(T)
+	case string:
+		return any(encodeString(v, tableKey)).(T)
+	default:
+		panic("type not supported:" + reflect.TypeOf(value).String())
+	}
+}
+
+// Convert decodes a wire value using [Decode].
+//
+// Deprecated: use [Decode] instead.
+func Convert[T any](value T, tableKey []byte) T {
+	return Decode(value, tableKey)
 }
 
 // XorBytes performs XOR operation between value and key bytes.
@@ -133,8 +171,8 @@ func ConvertUInt64(value uint64, key []byte) uint64 {
 
 // ConvertUbyte converts a uint8 value using XOR.
 func ConvertUbyte(value uint8, key []byte) uint8 {
-	if value == 0 {
-		return 0
+	if value == 0 || len(key) == 0 {
+		return value
 	}
 	return value ^ key[0]
 }
@@ -154,7 +192,7 @@ func calculateModulus(key []byte) int {
 	return modulus
 }
 
-// ConvertFloat32 converts a float32 value using XOR.
+// ConvertFloat32 decodes a float32 using a key-derived modulus and scale.
 func ConvertFloat32(value float32, key []byte) float32 {
 	modulus := calculateModulus(key)
 	if value > 0 && modulus != 1 {
@@ -163,13 +201,31 @@ func ConvertFloat32(value float32, key []byte) float32 {
 	return value
 }
 
-// ConvertFloat64 converts a float64 value using XOR.
+func encodeFloat32(value float32, key []byte) float32 {
+	modulus := calculateModulus(key)
+	if modulus == 1 {
+		return value
+	}
+
+	return value * float32(modulus) * 10000
+}
+
+// ConvertFloat64 decodes a float64 using a key-derived modulus and scale.
 func ConvertFloat64(value float64, key []byte) float64 {
 	modulus := calculateModulus(key)
 	if value > 0 && modulus != 1 {
 		return float64(value) / float64(modulus) / 10000
 	}
 	return value
+}
+
+func encodeFloat64(value float64, key []byte) float64 {
+	modulus := calculateModulus(key)
+	if modulus == 1 {
+		return value
+	}
+
+	return value * float64(modulus) * 10000
 }
 
 // ConvertString converts a base64 encoded string.
@@ -190,4 +246,18 @@ func ConvertString(value string, key []byte) string {
 		runes[i] = uint16(xorred[i*2]) | (uint16(xorred[i*2+1]) << 8)
 	}
 	return string(utf16.Decode(runes))
+}
+
+func encodeString(value string, key []byte) string {
+	if value == "" {
+		return ""
+	}
+
+	codeUnits := utf16.Encode([]rune(value))
+	raw := make([]byte, len(codeUnits)*2)
+	for i, codeUnit := range codeUnits {
+		binary.LittleEndian.PutUint16(raw[i*2:], codeUnit)
+	}
+
+	return base64.StdEncoding.EncodeToString(XorBytes(raw, key))
 }
