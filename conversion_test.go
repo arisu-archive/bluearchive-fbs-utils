@@ -143,6 +143,67 @@ func TestEncodeIntegers(t *testing.T) {
 	}
 }
 
+func TestEncodeSmallIntegers(t *testing.T) {
+	t.Parallel()
+
+	// int8(-5) = 0xFB; 0xFB ^ 0x01 = 0xFA = int8(-6).
+	if got := Encode(int8(-5), []byte{1}); got != -6 {
+		t.Errorf("Encode(int8(-5), %v) = %d, want %d", []byte{1}, got, -6)
+	}
+	// int16(258) = LE [0x02 0x01]; XOR [0xFF 0x00] = [0xFD 0x01] = int16(509).
+	key16 := []byte{0xFF, 0x00}
+	if got := Encode(int16(258), key16); got != 509 {
+		t.Errorf("Encode(int16(258), %v) = %d, want %d", key16, got, 509)
+	}
+	// Single-byte key must cycle across both bytes:
+	// int16(-2) = LE [0xFE 0xFF]; XOR [0x01 0x01] = [0xFF 0xFE] = int16(-257).
+	if got := Encode(int16(-2), []byte{1}); got != -257 {
+		t.Errorf("Encode(int16(-2), %v) = %d, want %d", []byte{1}, got, -257)
+	}
+	if got := Encode(uint16(2), []byte{1, 0}); got != 3 {
+		t.Errorf("Encode(uint16(2), %v) = %d, want %d", []byte{1, 0}, got, 3)
+	}
+}
+
+func TestSmallIntegerRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	key := []byte{0x5A, 0xC3}
+	if got := Decode(Encode(int8(-77), key), key); got != -77 {
+		t.Errorf("Decode(Encode(int8(-77))) = %d, want %d", got, -77)
+	}
+	if got := Decode(Encode(int16(-12345), key), key); got != -12345 {
+		t.Errorf("Decode(Encode(int16(-12345))) = %d, want %d", got, -12345)
+	}
+	if got := Decode(Encode(uint16(54321), key), key); got != 54321 {
+		t.Errorf("Decode(Encode(uint16(54321))) = %d, want %d", got, 54321)
+	}
+}
+
+func TestSmallIntegerGuards(t *testing.T) {
+	t.Parallel()
+
+	key := []byte{1}
+	if got := Encode(int8(0), key); got != 0 {
+		t.Errorf("Encode(int8(0), %v) = %d, want 0", key, got)
+	}
+	if got := Encode(int16(0), key); got != 0 {
+		t.Errorf("Encode(int16(0), %v) = %d, want 0", key, got)
+	}
+	if got := Encode(uint16(0), key); got != 0 {
+		t.Errorf("Encode(uint16(0), %v) = %d, want 0", key, got)
+	}
+	if got := Encode(int8(7), nil); got != 7 {
+		t.Errorf("Encode(int8(7), nil) = %d, want 7", got)
+	}
+	if got := Encode(int16(7), nil); got != 7 {
+		t.Errorf("Encode(int16(7), nil) = %d, want 7", got)
+	}
+	if got := Encode(uint16(7), nil); got != 7 {
+		t.Errorf("Encode(uint16(7), nil) = %d, want 7", got)
+	}
+}
+
 func TestBooleanIdentity(t *testing.T) {
 	t.Parallel()
 

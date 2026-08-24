@@ -38,6 +38,12 @@ func Decode[T any](value T, tableKey []byte) T {
 		return any(ConvertUInt64(v, tableKey)).(T)
 	case uint8:
 		return any(ConvertUbyte(v, tableKey)).(T)
+	case int8:
+		return any(ConvertSbyte(v, tableKey)).(T)
+	case int16:
+		return any(ConvertShort(v, tableKey)).(T)
+	case uint16:
+		return any(ConvertUShort(v, tableKey)).(T)
 	case bool:
 		return value
 	case float32:
@@ -68,6 +74,12 @@ func Encode[T any](value T, tableKey []byte) T {
 		return any(ConvertUInt64(v, tableKey)).(T)
 	case uint8:
 		return any(ConvertUbyte(v, tableKey)).(T)
+	case int8:
+		return any(ConvertSbyte(v, tableKey)).(T)
+	case int16:
+		return any(ConvertShort(v, tableKey)).(T)
+	case uint16:
+		return any(ConvertUShort(v, tableKey)).(T)
 	case bool:
 		return value
 	case float32:
@@ -175,6 +187,32 @@ func ConvertUbyte(value uint8, key []byte) uint8 {
 		return value
 	}
 	return value ^ key[0]
+}
+
+// ConvertSbyte converts an int8 value using XOR.
+func ConvertSbyte(value int8, key []byte) int8 {
+	if value == 0 || len(key) == 0 {
+		return value
+	}
+	return value ^ int8(key[0])
+}
+
+// ConvertShort converts an int16 value using XOR.
+func ConvertShort(value int16, key []byte) int16 {
+	if value == 0 || len(key) == 0 {
+		return value
+	}
+	raw := XorBytes(binary.LittleEndian.AppendUint16(nil, uint16(value)), key)
+	return int16(binary.LittleEndian.Uint16(raw))
+}
+
+// ConvertUShort converts a uint16 value using XOR.
+func ConvertUShort(value uint16, key []byte) uint16 {
+	if value == 0 || len(key) == 0 {
+		return value
+	}
+	raw := XorBytes(binary.LittleEndian.AppendUint16(nil, value), key)
+	return binary.LittleEndian.Uint16(raw)
 }
 
 func calculateModulus(key []byte) int {
